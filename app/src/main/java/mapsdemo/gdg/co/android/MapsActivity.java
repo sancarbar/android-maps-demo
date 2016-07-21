@@ -1,20 +1,46 @@
 package mapsdemo.gdg.co.android;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import com.google.android.gms.maps.CameraUpdateFactory;
+import android.support.v4.content.ContextCompat;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+
 
 public class MapsActivity
     extends FragmentActivity
-    implements OnMapReadyCallback
+    implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener
 {
 
-    private GoogleMap mMap;
+    private static final int ACCESS_LOCATION_PERMISSION_CODE = 10;
+
+    private GoogleMap googleMap;
+
+    public static boolean hasPermissions( Context context, String[] permissions )
+    {
+        for ( String permission : permissions )
+        {
+            if ( ContextCompat.checkSelfPermission( context, permission ) == PackageManager.PERMISSION_DENIED )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static void requestPermissions( Activity activity, String[] permissions, int requestCode )
+    {
+        ActivityCompat.requestPermissions( activity, permissions, requestCode );
+    }
 
     @Override
     protected void onCreate( Bundle savedInstanceState )
@@ -25,7 +51,6 @@ public class MapsActivity
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
     }
-
 
     /**
      * Manipulates the map once available.
@@ -39,11 +64,44 @@ public class MapsActivity
     @Override
     public void onMapReady( GoogleMap googleMap )
     {
-        mMap = googleMap;
-
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng( -34, 151 );
-        mMap.addMarker( new MarkerOptions().position( sydney ).title( "Marker in Sydney" ) );
-        mMap.moveCamera( CameraUpdateFactory.newLatLng( sydney ) );
+        this.googleMap = googleMap;
+        showMyLocation();
     }
+
+    @SuppressWarnings( "MissingPermission" )
+    public void showMyLocation()
+    {
+        if ( googleMap != null )
+        {
+            String[] permissions = { android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION };
+            if ( hasPermissions( this, permissions ) )
+            {
+                googleMap.setMyLocationEnabled( true );
+            }
+            else
+            {
+                requestPermissions( this, permissions, ACCESS_LOCATION_PERMISSION_CODE );
+            }
+        }
+    }
+
+    @Override
+    public void onConnected( @Nullable Bundle bundle )
+    {
+
+    }
+
+    @Override
+    public void onConnectionSuspended( int i )
+    {
+
+    }
+
+    @Override
+    public void onConnectionFailed( @NonNull ConnectionResult connectionResult )
+    {
+
+    }
+
 }
