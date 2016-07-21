@@ -20,6 +20,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 
 public class MapsActivity
@@ -101,7 +102,7 @@ public class MapsActivity
                 Location lastLocation = LocationServices.FusedLocationApi.getLastLocation( googleApiClient );
                 if ( lastLocation != null )
                 {
-                    displayLocationAndZoom( lastLocation, 15 );
+                    addMarkerAndZoom( lastLocation, "My Location", 15 );
                 }
             }
             else
@@ -172,15 +173,18 @@ public class MapsActivity
                                                                       public void onLocationChanged( Location location )
                                                                       {
                                                                           showMyLocation();
+                                                                          stopLocationUpdates();
                                                                       }
                                                                   } );
     }
 
 
-    private void displayLocationAndZoom( @NonNull Location location, int zoom )
+    public void addMarkerAndZoom( Location location, String title, int zoom )
     {
         LatLng myLocation = new LatLng( location.getLatitude(), location.getLongitude() );
+        googleMap.addMarker( new MarkerOptions().position( myLocation ).title( title ) );
         googleMap.moveCamera( CameraUpdateFactory.newLatLngZoom( myLocation, zoom ) );
     }
+
 
 }
