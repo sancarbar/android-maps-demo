@@ -87,6 +87,27 @@ public class MapsActivity
     }
 
     @Override
+    public void onRequestPermissionsResult( int requestCode, @NonNull String[] permissions,
+                                            @NonNull int[] grantResults )
+    {
+        for ( int grantResult : grantResults )
+        {
+            if ( grantResult == -1 )
+            {
+                return;
+            }
+        }
+        switch ( requestCode )
+        {
+            case ACCESS_LOCATION_PERMISSION_CODE:
+                showMyLocation();
+                break;
+            default:
+                super.onRequestPermissionsResult( requestCode, permissions, grantResults );
+        }
+    }
+
+    @Override
     public void onConnected( @Nullable Bundle bundle )
     {
 
