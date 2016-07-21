@@ -2,14 +2,18 @@ package mapsdemo.gdg.co.android;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.view.View;
+import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -36,6 +40,8 @@ public class MapsActivity
 
     private GoogleApiClient googleApiClient;
 
+    private TextView address;
+
     public static boolean hasPermissions( Context context, String[] permissions )
     {
         for ( String permission : permissions )
@@ -58,6 +64,8 @@ public class MapsActivity
     {
         super.onCreate( savedInstanceState );
         setContentView( R.layout.activity_maps );
+        address = (TextView) findViewById( R.id.address );
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
@@ -187,4 +195,41 @@ public class MapsActivity
     }
 
 
+    public void onFindAddressClicked( View view )
+    {
+        startFetchAddressIntentService();
+    }
+
+
+    @SuppressWarnings( "MissingPermission" )
+    public void startFetchAddressIntentService()
+    {
+        Location lastLocation = LocationServices.FusedLocationApi.getLastLocation( googleApiClient );
+        if ( lastLocation != null )
+        {
+            AddressResultReceiver addressResultReceiver = new AddressResultReceiver( new Handler() );
+            addressResultReceiver.setAddressResultListener( new AddressResultListener()
+            {
+                @Override
+                public void onAddressFound( final String address )
+                {
+                    runOnUiThread( new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            MapsActivity.this.address.setText( address );
+                            MapsActivity.this.address.setVisibility( View.VISIBLE );
+                        }
+                    } );
+
+
+                }
+            } );
+            Intent intent = new Intent( this, FetchAddressIntentService.class );
+            intent.putExtra( FetchAddressIntentService.RECEIVER, addressResultReceiver );
+            intent.putExtra( FetchAddressIntentService.LOCATION_DATA_EXTRA, lastLocation );
+            startService( intent );
+        }
+    }
 }
