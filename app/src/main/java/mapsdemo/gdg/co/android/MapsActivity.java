@@ -3,6 +3,7 @@ package mapsdemo.gdg.co.android;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -11,9 +12,14 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
 
 
 public class MapsActivity
@@ -23,7 +29,11 @@ public class MapsActivity
 
     private static final int ACCESS_LOCATION_PERMISSION_CODE = 10;
 
+    private final LocationRequest locationRequest = new LocationRequest();
+
     private GoogleMap googleMap;
+
+    private GoogleApiClient googleApiClient;
 
     public static boolean hasPermissions( Context context, String[] permissions )
     {
@@ -50,6 +60,16 @@ public class MapsActivity
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
+
+        //Configure Google Maps API Objects
+        googleApiClient =
+            new GoogleApiClient.Builder( this ).addConnectionCallbacks( this ).addOnConnectionFailedListener(
+                this ).addApi( LocationServices.API ).build();
+        locationRequest.setInterval( 10000 );
+        locationRequest.setFastestInterval( 5000 );
+        locationRequest.setPriority( LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY );
+        googleApiClient.connect();
+
     }
 
     /**
@@ -65,7 +85,6 @@ public class MapsActivity
     public void onMapReady( GoogleMap googleMap )
     {
         this.googleMap = googleMap;
-        showMyLocation();
     }
 
     @SuppressWarnings( "MissingPermission" )
@@ -78,6 +97,12 @@ public class MapsActivity
             if ( hasPermissions( this, permissions ) )
             {
                 googleMap.setMyLocationEnabled( true );
+
+                Location lastLocation = LocationServices.FusedLocationApi.getLastLocation( googleApiClient );
+                if ( lastLocation != null )
+                {
+                    displayLocationAndZoom( lastLocation, 15 );
+                }
             }
             else
             {
@@ -110,19 +135,52 @@ public class MapsActivity
     @Override
     public void onConnected( @Nullable Bundle bundle )
     {
-
+        startLocationUpdates();
     }
 
     @Override
     public void onConnectionSuspended( int i )
     {
-
+        stopLocationUpdates();
     }
 
     @Override
     public void onConnectionFailed( @NonNull ConnectionResult connectionResult )
     {
+        startLocationUpdates();
+    }
 
+    public void stopLocationUpdates()
+    {
+        LocationServices.FusedLocationApi.removeLocationUpdates( googleApiClient, new LocationListener()
+        {
+            @Override
+            public void onLocationChanged( Location location )
+            {
+
+            }
+        } );
+    }
+
+    @SuppressWarnings( "MissingPermission" )
+    public void startLocationUpdates()
+    {
+        LocationServices.FusedLocationApi.requestLocationUpdates( googleApiClient, locationRequest,
+                                                                  new LocationListener()
+                                                                  {
+                                                                      @Override
+                                                                      public void onLocationChanged( Location location )
+                                                                      {
+                                                                          showMyLocation();
+                                                                      }
+                                                                  } );
+    }
+
+
+    private void displayLocationAndZoom( @NonNull Location location, int zoom )
+    {
+        LatLng myLocation = new LatLng( location.getLatitude(), location.getLongitude() );
+        googleMap.moveCamera( CameraUpdateFactory.newLatLngZoom( myLocation, zoom ) );
     }
 
 }
